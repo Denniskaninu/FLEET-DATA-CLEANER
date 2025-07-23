@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Manager Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * { font-family: 'Inter', sans-serif; }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #10b981, #059669);
+            transition: width 0.3s ease;
+        }
+        
+        .file-drop-zone {
+            transition: all 0.3s ease;
+            border: 2px dashed #374151;
+        }
+        
+        .file-drop-zone.dragover {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        .output-file {
+            transition: all 0.3s ease;
+        }
+        
+        .output-file:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <div class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-microchip text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold">FLEET DATA PROCESSOR</h1>
+                    <p class="text-gray-400 text-sm">Excel Processing</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-emerald-400">● Online</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-8 max-w-7xl">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Input Section -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- File Upload -->
+                <div class="glass-effect rounded-xl p-6">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-upload mr-2 text-emerald-400"></i>
+                        File Input
+                    </h2>
+                    
+                    <div id="dropZone" class="file-drop-zone rounded-lg p-8 text-center cursor-pointer">
+                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-lg mb-2">Drop Excel file here or click to browse</p>
+                        <p class="text-sm text-gray-400">Supports .xlsx, .xls files</p>
+                        <input type="file" id="fileInput" class="hidden" accept=".xlsx,.xls">
+                    </div>
+                    
+                    <div id="fileInfo" class="mt-4 hidden">
+                        <div class="flex items-center justify-between bg-gray-800 rounded-lg p-3">
+                            <div class="flex items-center">
+                                <i class="fas fa-file-excel text-emerald-400 mr-2"></i>
+                                <span id="fileName" class="font-medium"></span>
+                            </div>
+                            <button id="removeFile" class="text-red-400 hover:text-red-300">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Processing Controls -->
+                <div class="glass-effect rounded-xl p-6">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-cogs mr-2 text-emerald-400"></i>
+                        Processing
+                    </h2>
+                    
+                    <button id="processBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 px-6 rounded-lg font-medium transition-all duration-300 flex items-center justify-center" disabled>
+                        <i class="fas fa-play mr-2"></i>
+                        Process Devices
+                    </button>
+                    
+                    <div id="progressContainer" class="mt-4 hidden">
+                        <div class="flex justify-between text-sm mb-2">
+                            <span>Processing...</span>
+                            <span id="progressText">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div id="progressBar" class="progress-bar h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Log Section -->
+                <div class="glass-effect rounded-xl p-6">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-terminal mr-2 text-emerald-400"></i>
+                        Processing Log
+                    </h2>
+                    <div id="logArea" class="bg-gray-800 rounded-lg p-4 h-64 overflow-y-auto font-mono text-sm">
+                        <div class="text-gray-400">Ready to process files...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output Section -->
+            <div class="space-y-6">
+                <!-- Output Browser -->
+                <div class="glass-effect rounded-xl p-6">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-folder-open mr-2 text-emerald-400"></i>
+                        Output Files
+                    </h2>
+                    
+                    <div id="outputBrowser" class="space-y-3">
+                        <div class="text-center text-gray-400 py-8">
+                            <i class="fas fa-folder text-3xl mb-2"></i>
+                            <p>No files processed yet</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="glass-effect rounded-xl p-6">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-chart-bar mr-2 text-emerald-400"></i>
+                        Statistics
+                    </h2>
+                    
+                    <div id="stats" class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Total Devices:</span>
+                            <span id="totalDevices">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Valid Devices:</span>
+                            <span id="validDevices" class="text-emerald-400">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Expired Devices:</span>
+                            <span id="expiredDevices" class="text-red-400">0</span>
+                        </div>
+                        <hr class="border-gray-700">
+                        <div class="text-xs text-gray-500 space-y-1">
+                            <div>Kenya Devices: <span id="kenyaCount">0</span></div>
+                            <div>Tanzania Devices: <span id="tanzaniaCount">0</span></div>
+                            <div>Uganda Devices: <span id="ugandaCount">0</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal for dialogs -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 id="modalTitle" class="text-lg font-semibold mb-4"></h3>
+            <p id="modalMessage" class="text-gray-300 mb-6"></p>
+            <div class="flex justify-end space-x-3">
+                <button id="modalCancel" class="px-4 py-2 text-gray-400 hover:bg-gray-700 rounded">Cancel</button>
+                <button id="modalConfirm" class="px-4 py-2 bg-emerald-500 text-white hover:bg-emerald-600 rounded">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFile = null;
+        let processedFiles = [];
+
+        // Dark mode support
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // Custom modal functions
+        function showModal(title, message, onConfirm) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById('modal').classList.remove('hidden');
+            document.getElementById('modal').classList.add('flex');
+            
+            document.getElementById('modalConfirm').onclick = () => {
+                hideModal();
+                if (onConfirm) onConfirm();
+            };
+        }
+
+        function hideModal() {
+            document.getElementById('modal').classList.add('hidden');
+            document.getElementById('modal').classList.remove('flex');
+        }
+
+        document.getElementById('modalCancel').onclick = hideModal;
+
+        // File handling
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const processBtn = document.getElementById('processBtn');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        document.getElementById('removeFile').addEventListener('click', () => {
+            currentFile = null;
+            fileInfo.classList.add('hidden');
+            processBtn.disabled = true;
+            processBtn.classList.add('opacity-50');
+            fileInput.value = '';
+            log('File removed');
+        });
+
+        function handleFile(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                showModal('Invalid File', 'Please select an Excel file (.xlsx or .xls)');
+                return;
+            }
+            
+            currentFile = file;
+            fileName.textContent = file.name;
+            fileInfo.classList.remove('hidden');
+            processBtn.disabled = false;
+            processBtn.classList.remove('opacity-50');
+            log(`Selected file: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+        }
+
+        // Logging
+        function log(message) {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'text-gray-300 mb-1';
+            logEntry.innerHTML = `<span class="text-gray-500">[${timestamp}]</span> ${message}`;
+            logArea.appendChild(logEntry);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // Progress bar
+        function updateProgress(percent, text = '') {
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const progressContainer = document.getElementById('progressContainer');
+            
+            if (percent > 0) {
+                progressContainer.classList.remove('hidden');
+            }
+            
+            progressBar.style.width = percent + '%';
+            progressText.textContent = text || `${percent}%`;
+            
+            if (percent >= 100) {
+                setTimeout(() => {
+                    progressContainer.classList.add('hidden');
+                }, 2000);
+            }
+        }
+
+        // Statistics update
+        function updateStats(stats) {
+            document.getElementById('totalDevices').textContent = stats.total;
+            document.getElementById('validDevices').textContent = stats.valid;
+            document.getElementById('expiredDevices').textContent = stats.expired;
+            document.getElementById('kenyaCount').textContent = stats.kenya;
+            document.getElementById('tanzaniaCount').textContent = stats.tanzania;
+            document.getElementById('ugandaCount').textContent = stats.uganda;
+        }
+
+        // File processing
+        processBtn.addEventListener('click', async () => {
+            if (!currentFile) {
+                showModal('No File Selected', 'Please select an Excel file first');
+                return;
+            }
+
+            processBtn.disabled = true;
+            processBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+            
+            log('Starting file processing...');
+            updateProgress(10, 'Reading file...');
+
+            try {
+                const arrayBuffer = await currentFile.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                
+                log(`Found ${workbook.SheetNames.length} sheet(s): ${workbook.SheetNames.join(', ')}`);
+                updateProgress(30, 'Parsing data...');
+
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const data = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                
+                if (data.length < 2) {
+                    throw new Error('File appears to be empty or has no data rows');
+                }
+
+                // Remove first data row (keep header)
+                const headers = data[0];
+                const rows = data.slice(2); // Skip header and first data row
+                
+                log(`Headers: ${headers.join(', ')}`);
+                log(`Processing ${rows.length} data rows...`);
+
+                // Find required columns
+                const deviceCol = headers.findIndex(h => h && h.toString().toLowerCase().includes('device'));
+                const remainCol = headers.findIndex(h => h && h.toString().toLowerCase().includes('remain'));
+                
+                if (deviceCol === -1 || remainCol === -1) {
+                    throw new Error(`Required columns not found. Looking for 'Device' and 'Remain(Day)' columns.`);
+                }
+
+                updateProgress(50, 'Categorizing devices...');
+
+                // Process data
+                const categorized = {
+                    kenya_valid: [], kenya_expired: [],
+                    tanzania_valid: [], tanzania_expired: [],
+                    uganda_valid: [], uganda_expired: []
+                };
+
+                let stats = { total: 0, valid: 0, expired: 0, kenya: 0, tanzania: 0, uganda: 0 };
+
+                rows.forEach((row, index) => {
+                    if (!row || row.length === 0) return;
+                    
+                    const device = row[deviceCol]?.toString().trim();
+                    const remainDays = parseFloat(row[remainCol]) || 0;
+                    
+                    if (!device) return;
+
+                    stats.total++;
+                    const rowData = [headers, ...rows.slice(index, index + 1)];
+                    
+                    const firstLetter = device[0].toUpperCase();
+                    const isValid = remainDays > 0;
+                    
+                    if (isValid) stats.valid++;
+                    else stats.expired++;
+
+                    if (firstLetter === 'T') {
+                        stats.tanzania++;
+                        categorized[isValid ? 'tanzania_valid' : 'tanzania_expired'].push(row);
+                    } else if (firstLetter === 'U') {
+                        stats.uganda++;
+                        categorized[isValid ? 'uganda_valid' : 'uganda_expired'].push(row);
+                    } else {
+                        stats.kenya++;
+                        categorized[isValid ? 'kenya_valid' : 'kenya_expired'].push(row);
+                    }
+                });
+
+                updateProgress(70, 'Generating files...');
+
+                // Create Excel files
+                const files = [];
+                const countries = ['kenya', 'tanzania', 'uganda'];
+                const types = ['valid', 'expired'];
+
+                for (const country of countries) {
+                    for (const type of types) {
+                        const key = `${country}_${type}`;
+                        const data = categorized[key];
+                        const capitalizedCountry = country.charAt(0).toUpperCase() + country.slice(1);
+                        const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+                        const filename = `${capitalizedCountry}_${capitalizedType}_DEVICES.xlsx`;
+                        
+                        const wsData = [headers, ...data];
+                        const ws = XLSX.utils.aoa_to_sheet(wsData);
+                        const wb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb, ws, 'Devices');
+                        
+                        const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                        const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                        
+                        files.push({
+                            name: filename,
+                            blob: blob,
+                            country: capitalizedCountry,
+                            type: capitalizedType,
+                            count: data.length
+                        });
+                        
+                        log(`Created ${filename} with ${data.length} devices`);
+                    }
+                }
+
+                updateProgress(90, 'Finalizing...');
+
+                processedFiles = files;
+                updateOutputBrowser(files);
+                updateStats(stats);
+
+                updateProgress(100, 'Complete!');
+                log('✅ Processing completed successfully!');
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`);
+                showModal('Processing Error', error.message);
+            } finally {
+                processBtn.disabled = false;
+                processBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Process Devices';
+            }
+        });
+
+        // Output browser
+        function updateOutputBrowser(files) {
+            const outputBrowser = document.getElementById('outputBrowser');
+            
+            if (files.length === 0) {
+                outputBrowser.innerHTML = `
+                    <div class="text-center text-gray-400 py-8">
+                        <i class="fas fa-folder text-3xl mb-2"></i>
+                        <p>No files processed yet</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const countriesData = {};
+            files.forEach(file => {
+                if (!countriesData[file.country]) {
+                    countriesData[file.country] = [];
+                }
+                countriesData[file.country].push(file);
+            });
+
+            let html = '';
+            Object.keys(countriesData).forEach(country => {
+                html += `
+                    <div class="mb-4">
+                        <h3 class="text-sm font-medium text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-folder mr-2 text-yellow-400"></i>
+                            ${country.toUpperCase()}_DEVICES
+                        </h3>
+                        <div class="space-y-2 ml-4">
+                `;
+                
+                countriesData[country].forEach(file => {
+                    const iconColor = file.type === 'Valid' ? 'text-emerald-400' : 'text-red-400';
+                    html += `
+                        <div class="output-file bg-gray-800 rounded-lg p-3 cursor-pointer hover:bg-gray-700" onclick="downloadFile('${file.name}')">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-file-excel ${iconColor} mr-2"></i>
+                                    <span class="text-sm font-medium">${file.name}</span>
+                                </div>
+                                <div class="text-xs text-gray-400">
+                                    ${file.count} devices
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            outputBrowser.innerHTML = html;
+        }
+
+        function downloadFile(filename) {
+            const file = processedFiles.find(f => f.name === filename);
+            if (!file) {
+                showModal('File Not Found', 'The requested file could not be found');
+                return;
+            }
+
+            const url = URL.createObjectURL(file.blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            log(`📥 Downloaded: ${filename}`);
+        }
+
+        // Initialize
+        log('Device Manager Pro initialized');
+        log('Ready to process Excel files...');
+    </script>
+</body>
+</html>
