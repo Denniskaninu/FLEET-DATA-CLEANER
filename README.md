@@ -1,6 +1,6 @@
 # Fleet Data Cleaner
 
-Fleet Data Cleaner is a simple yet powerful web tool for processing and organizing fleet device data from Excel files. It helps you to quickly sort, categorize, and export device lists based on country and validity status, making fleet management and reporting much easier.
+Fleet Data Cleaner is a simple yet powerful web tool for processing and organizing fleet device data from Excel files. It helps you quickly sort, categorize, and export device lists based on country and validity status, making fleet management and reporting much easier.
 
 ## Features
 
@@ -39,9 +39,26 @@ Fleet Data Cleaner is a simple yet powerful web tool for processing and organizi
 
 ## Getting Started
 
-1. Clone or download this repository.
-2. Open `index.html` in your browser.
-3. Start cleaning your fleet data!
+### Cloning the Repository
+
+First, clone this repository to your local machine:
+
+```bash
+git clone https://github.com/Denniskaninu/FLEET-DATA-CLEANER.git
+```
+
+Then, move into the project directory:
+
+```bash
+cd FLEET-DATA-CLEANER
+```
+
+### Running the Application
+
+1. Open the `index.html` file in your web browser (double-click or right-click → "Open with...").
+2. Start cleaning your fleet data!
+
+> **No installation required** – it runs entirely in your browser.
 
 ## License
 
